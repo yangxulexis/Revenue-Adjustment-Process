@@ -1,7 +1,7 @@
 import openpyxl
 from datetime import datetime
 import shutil
-import os
+import os, stat
 
 
 def subAcctIdValidation(content, platform):
@@ -117,7 +117,7 @@ def main():
 	# outputFile = open(folderPath+fileName.split('.')[0]+'.txt','w')
 	outputFile = open(folderPath+'revenue_adjustment_'+todayDate+'.txt','w')
 
-	platform = readPlatform(folderPath)
+	platform = readPlatform(targetFolderPath)
 
 
 	book = openpyxl.load_workbook(folderPath+fileName)
@@ -214,7 +214,22 @@ def main():
 	book.close()
 	
 	#move processed folder to archive folder
-	shutil.move(folderPath,targetFolderPath+'Archives/')
+	os.chmod(folderPath, 0o777)
+	archivePath = targetFolderPath+'Archives/'+todayDate
+	if not os.path.exists(archivePath):
+		os.makedirs(archivePath)
+	else:
+		os.chmod(archivePath, 0o777)
+
+	for file in os.listdir(folderPath):
+		absolutePath = folderPath + str(file)
+		if os.path.isfile(absolutePath):
+			shutil.copy2(absolutePath, archivePath)
+			os.remove(absolutePath)
+
+
+
+	# shutil.move(folderPath,targetFolderPath+'Archives/')
 
 
 
