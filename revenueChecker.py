@@ -2,6 +2,7 @@ import openpyxl
 from datetime import datetime
 import shutil
 import os, stat
+from send_email import send_mail
 
 
 def subAcctIdValidation(content, platform):
@@ -136,6 +137,8 @@ def main():
 	rowIndex =  colIndex = 0
 	noMissingCol = [0,1,2,3,5,6,9,13]
 	productionNameList = productName(folderPath, fileName)
+	subAcctIdWarning = []
+	subAcctIdError = []
 
 
 	rows = wb.rows
@@ -171,8 +174,10 @@ def main():
 					if not subAcctIdValidation(cell.value, platform):
 						# logFile.write("Line " + str(rowIndex+1) + ": " + header[colIndex] + " has error. Skipped..." + "\n")
 						err.append('Error: ' + header[colIndex] + ': ' + str(cell.value)  + " has error." + "\n")
+						subAcctIdError.append(str(cell.value))
 					elif subAcctIdValidation(cell.value, platform) == "Warning":
 						logFile.write("Warning: " + "Platform ID " + str(cell.value) + "is valid but in exception" + "\n")
+						subAcctIdWarning.append(str(cell.value))
 
 
 				if colIndex == 2 and not dateFormatValidation(cell.value):
@@ -229,8 +234,28 @@ def main():
 
 
 
-	# shutil.move(folderPath,targetFolderPath+'Archives/')
-
+	#send email to nofity user
+	sentFrom = 'yang.xu@lexisnexisrisk.com'
+	sentTo = ['Karen.Norero@lexisnexisrisk.com']
+	sendCC = ['yang.xu@lexisnexisrisk.com']
+	#If the platform is part of the optional list, send an email with these information:
+	if len(subAcctIdWarning) > 0:
+		subject = 'Revenue Adjustment Process Warning – Platform exception included'
+		content = 'There are accounts in the file that have are part of the exception list.\n'
+		for i in subAcctIdWarning:
+			content = content + i + "\n"
+		content += 'These accounts are included on the file to be processed on HPCC. Please validate before loading the data.'
+		send_email(sentFrom,sentTo,sendCC, subject,content)
+	
+	if len(subAcctIdError) > 0:
+		subject = 'Revenue Adjustment Process Error – Invalid Platform included'
+		content = 'There are accounts in the file that are part of the not to process list.\n'
+		for i in subAcctIdError:
+			content = content + i + "\n"
+			print(content)
+		content += 'These accounts are NOT included on the file to be processed on HPCC. Please validate the errors and reprocess these accounts.'
+		print(content)
+		send_mail(sentFrom,sentTo,sendCC, subject,content)
 
 
 if __name__ =="__main__":
