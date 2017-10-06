@@ -169,8 +169,6 @@ def main():
 					
 
 				if colIndex == 0:
-					# if rowIndex in range(20):
-					# 	print(subAcctIdValidation(cell.value, platform))
 					if not subAcctIdValidation(cell.value, platform):
 						# logFile.write("Line " + str(rowIndex+1) + ": " + header[colIndex] + " has error. Skipped..." + "\n")
 						err.append('Error: ' + header[colIndex] + ': ' + str(cell.value)  + " has error." + "\n")
@@ -204,7 +202,10 @@ def main():
 			outputFile.write(tableCells + "\n")
 
 		else:
-			errorFile.write(tableCells + '\n')
+			if len(subAcctIdError) > 0:
+				outputFile.write(tableCells + "\n") # if platform has error, output to both error file and output file.
+			errorFile.write('\t'.join(header) + '\n') #add header to error file
+			errorFile.write(tableCells + '\n')			
 			print(err)
 			for e in err:
 				logFile.write(e)
@@ -245,7 +246,7 @@ def main():
 		for i in subAcctIdWarning:
 			content = content + i + "\n"
 		content += 'These accounts are included on the file to be processed on HPCC. Please validate before loading the data.'
-		send_email(sentFrom,sentTo,sendCC, subject,content)
+		send_mail(sentFrom,sentTo,sendCC, subject,content)
 	
 	if len(subAcctIdError) > 0:
 		subject = 'Revenue Adjustment Process Error – Invalid Platform included'
@@ -255,6 +256,12 @@ def main():
 			print(content)
 		content += 'These accounts are NOT included on the file to be processed on HPCC. Please validate the errors and reprocess these accounts.'
 		print(content)
+		send_mail(sentFrom,sentTo,sendCC, subject,content)
+	if len(err) > 0:
+		subject = 'Revenue Adjustment Process Error – General Error'
+		content ='Errors have been found:' + "\n"
+		for i in err:
+			content = content + i
 		send_mail(sentFrom,sentTo,sendCC, subject,content)
 
 
