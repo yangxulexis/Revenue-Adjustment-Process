@@ -97,7 +97,7 @@ def readPlatform(folderPath):
 
 def main():
 
-	targetFolderPath = 'D:/red/data/inbound/manual_revenue_adjustment/'
+	targetFolderPath = 'D:/red/data/inbound/manual_adjustment/'
 
 	fileName = "Essbase_Mth_End_Revenue_Adjustment_template.xlsx"
 
@@ -121,7 +121,7 @@ def main():
 	platform = readPlatform(targetFolderPath)
 
 
-	book = openpyxl.load_workbook(folderPath+fileName)
+	book = openpyxl.load_workbook(folderPath+fileName, data_only = True)
 
 	if "Input" not in book.get_sheet_names():
 		print('Input Tab Is Not Found in File! Program Terminated!')
@@ -152,51 +152,69 @@ def main():
 		err = []
 		tableCells = ''
 		logFile.write("Line " + str(rowIndex+1) + ": " +"\n")
+		
+		tableContent = []
 			
 		for cell in row:
+			tableContent.append(cell.value)
+		
+		if all(map(lambda x: x == tableContent[0], tableContent)):
+			print('This line is probably empty. Skipped!')
+			logFile.write('This line is probably empty. Skipped!' + '\n')
+			rowIndex +=1
+			continue				
+				
+		
+		for col in tableContent:
 
 			if rowIndex == 0:
 
-				header.append(cell.value)
+				header.append(col)
 
 			else:
-				if colIndex in noMissingCol and  cell.value is None:
+				if colIndex in noMissingCol and  col is None:
 					err.append('Error: ' + header[colIndex]+ " is empty."+"\n")
 				
 
-				if colIndex == 3 and not productNameValidation(cell.value, productionNameList):
-					logFile.write("Warning: " + "Production Name " + str(cell.value) + "is not in provided list" + "\n")
+				if colIndex == 3 and not productNameValidation(col, productionNameList):
+					logFile.write("Warning: " + "Production Name " + str(col) + "is not in provided list" + "\n")
 					
 
 				if colIndex == 0:
-					if not subAcctIdValidation(cell.value, platform):
+					if not subAcctIdValidation(col, platform):
 						# logFile.write("Line " + str(rowIndex+1) + ": " + header[colIndex] + " has error. Skipped..." + "\n")
-						err.append('Error: ' + header[colIndex] + ': ' + str(cell.value)  + " has error." + "\n")
-						subAcctIdError.append(str(cell.value))
-					elif subAcctIdValidation(cell.value, platform) == "Warning":
-						logFile.write("Warning: " + "Platform ID " + str(cell.value) + "is valid but in exception" + "\n")
-						subAcctIdWarning.append(str(cell.value))
+						err.append('Error: ' + header[colIndex] + ': ' + str(col)  + " has error." + "\n")
+						subAcctIdError.append(str(col))
+					elif subAcctIdValidation(col, platform) == "Warning":
+						logFile.write("Warning: " + "Platform ID " + str(col) + "is valid but in exception" + "\n")
+						subAcctIdWarning.append(str(col))
 
 
-				if colIndex == 2 and not dateFormatValidation(cell.value):
-					err.append('Error: ' + header[colIndex] + ': ' + str(cell.value) + " is not in correct date format." + "\n")
+				if colIndex == 2 and not dateFormatValidation(col):
+					err.append('Error: ' + header[colIndex] + ': ' + str(col) + " is not in correct date format." + "\n")
 
-				if colIndex in [4,5] and searchTransTypeValidation(cell.value):
+				if colIndex in [4,5] and searchTransTypeValidation(col):
 					# logFile.write("Line " + str(rowIndex+1) + ": " + header[colIndex] + " has error. Skipped..." + "\n")
-					err.append('Error: ' + header[colIndex] + ': ' + str(cell.value) + " is not in correct search trans type." + "\n")
+					err.append('Error: ' + header[colIndex] + ': ' + str(col) + " is not in correct search trans type." + "\n")
 
-				if colIndex == [8,9] and not revenueUnitFormatValidation(cell.value):
+				if colIndex == [8,9] and not revenueUnitFormatValidation(col):
 					# logFile.write("Line " + str(rowIndex+1) + ": " + header[colIndex] + " has error. Skipped..." + "\n")
-					err.append('Error: ' + header[colIndex] + ': ' + str(cell.value) + " is not in correct revenue unit format." + "\n")
+					err.append('Error: ' + header[colIndex] + ': ' + str(col) + " is not in correct revenue unit format." + "\n")
 
 			
-			if cell.value == None:
+			if col == None:
 				tableCells += '' + "\t"
 			else:
-				tableCells += str(cell.value) + "\t"
+				tableCells += str(col) + "\t"
 
 			colIndex += 1
 
+		if len(header) != 14:
+			print('The file contains more than 14 columns. Please check!')
+			logFile.write('The file contains more than 14 columns. Please check!'+'\n')
+			logFile.close()
+			return
+			
 		if len(err) == 0:
 			logFile.write("Okay!" + "\n")
 			outputFile.write(tableCells + "\n")
@@ -213,7 +231,6 @@ def main():
 
 		rowIndex +=1
 
-	
 	logFile.close()
 	errorFile.close()
 	outputFile.close()
@@ -221,7 +238,7 @@ def main():
 	
 	#move processed folder to archive folder
 	os.chmod(folderPath, 0o777)
-	archivePath = targetFolderPath+'Archives/'+todayDate
+	archivePath = 'D:/red/data/inbound/manual/adhoc/working/'+'Archives/'+todayDate
 	if not os.path.exists(archivePath):
 		os.makedirs(archivePath)
 	else:
