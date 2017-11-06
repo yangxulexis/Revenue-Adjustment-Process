@@ -236,19 +236,20 @@ def main():
 	outputFile.close()
 	book.close()
 	
-	#move processed folder to archive folder
+	#move text file folder to landing zone folder
 	os.chmod(folderPath, 0o777)
-	archivePath = 'D:/red/data/inbound/manual/adhoc/working/'+'Archives/'+todayDate
-	if not os.path.exists(archivePath):
-		os.makedirs(archivePath)
+	targetPath = 'D:/red/data/inbound/manual/adhoc/working/'+todayDate
+	if not os.path.exists(targetPath):
+		os.makedirs(targetPath)
 	else:
-		os.chmod(archivePath, 0o777)
+		os.chmod(targetPath, 0o777)
 
-	for file in os.listdir(folderPath):
-		absolutePath = folderPath + str(file)
-		if os.path.isfile(absolutePath):
-			shutil.copy2(absolutePath, archivePath)
-			os.remove(absolutePath)
+	try:
+		absolutePath = folderPath + 'revenue_adjustment_'+todayDate+'.txt'
+		shutil.copy2(absolutePath, targetPath)
+	except:
+		print("Error in copy txt file to landing zone folder!")
+
 
 
 
