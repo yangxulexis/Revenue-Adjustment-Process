@@ -1,0 +1,16 @@
+Platform_cd	status
+TRI  	accepted
+IND  	accepted
+MAR  	accepted
+KWX  	accepted
+BIS  	accepted
+SIS  	accepted
+VCT  	accepted
+PFC	accepted
+MED	optional
+ENC	optional
+HMS	optional
+HPC	optional
+BRI	optional
+DYT	optional
+ACC	optional

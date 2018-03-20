@@ -93,39 +93,52 @@ def readPlatform(folderPath):
 	platformFile.close()
 	return platform
 
+def checkDateFolder(folderPath):
 
 
-def main():
+def main(env):
 
-	targetFolderPath = 'D:/red/data/inbound/manual_adjustment/'
+	# set up path, file name and folders
+
+	if env == 'production':
+		targetFolderPath = 'D:/red/data/inbound/manual_adjustment/'
+		folderPath = targetFolderPath + todayDate + "/"
+	else:
+		targetFolderPath = os.getcwd()
+		folderPath = os.getcwd()
+
 
 	fileName = "Essbase_Mth_End_Revenue_Adjustment_template.xlsx"
 
 	todayDate = datetime.now().strftime("%Y%m%d")
 
-	folderPath = targetFolderPath + todayDate + "/"
 
-	if os.path.isdir(folderPath) == False:
-		print("Folder in today's date " + todayDate + " does not exist! Program Terminated.")
-		return
-
-	
+	# set up log file, error report file and output file	
 	
 	logFile = open(folderPath+'log.txt','w')
 	
 	errorFile = open(folderPath+'Error_revenue_adjustment_'+todayDate+'.txt','w')
 	
-	# outputFile = open(folderPath+fileName.split('.')[0]+'.txt','w')
 	outputFile = open(folderPath+'revenue_adjustment_'+todayDate+'.txt','w')
 
 	platform = readPlatform(targetFolderPath)
+
+	# check if folder named in today's date exists. If not, program would be terminated.
+
+	if not os.path.isdir(folderPath):
+		errorMessage = "Folder in today's date " + todayDate + " does not exist! Program Terminated."
+		print(errorMessage)
+		logFile.write(errorMessage)
+		logFile.close()
+		return
 
 
 	book = openpyxl.load_workbook(folderPath+fileName, data_only = True)
 
 	if "Input" not in book.get_sheet_names():
-		print('Input Tab Is Not Found in File! Program Terminated!')
-		logFile.write('Input Tab Is Not Found in File! Program Terminated!'+'\n')
+		errorMessage = 'Input Tab Is Not Found in File! Program Terminated!'
+		print(errorMessage)
+		logFile.write(errorMessage)
 		logFile.close()
 		return
 	else:
@@ -135,7 +148,7 @@ def main():
 
 	header = []
 	rowIndex =  colIndex = 0
-	noMissingCol = [0,1,2,3,5,6,9,13]
+	noMissingCol = [0,1,2,3,5,6,9]
 	productionNameList = productName(folderPath, fileName)
 	subAcctIdWarning = []
 	subAcctIdError = []
@@ -154,16 +167,19 @@ def main():
 		logFile.write("Line " + str(rowIndex+1) + ": " +"\n")
 		
 		tableContent = []
-			
+		
+		cellIndex = 0
 		for cell in row:
+			if cellIndex > 13:
+				break
 			tableContent.append(cell.value)
+			cellIndex += 1
 		
 		if all(map(lambda x: x == tableContent[0], tableContent)):
 			print('This line is probably empty. Skipped!')
 			logFile.write('This line is probably empty. Skipped!' + '\n')
 			rowIndex +=1
-			continue				
-				
+			continue
 		
 		for col in tableContent:
 
